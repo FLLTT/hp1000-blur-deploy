@@ -1,0 +1,18 @@
+# Credentials must never be committed.
+*.private
+.env
+.env.*
+*token*
+# Downloaded data, dependencies, logs and local processing are runtime-only.
+.run/
+work*/
+deployment/
+*.mp4
+*.mkv
+*.tar
+*.tar.gz
+*.zip
+*.pth
+*.onnx
+__pycache__/
+*.pyc

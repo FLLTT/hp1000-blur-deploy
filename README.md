@@ -1,0 +1,33 @@
+# HumanPlus 双目脱敏：clone 后一条 bash
+
+这个仓库只包含小型启动脚本和说明。模型、环境包、输入视频与返回结果均保存在私有 Hugging Face Dataset `FLTTY/Lty-HP1000`；仓库不包含 Token、模型包或原始数据。
+
+在仓库正式发布后，用实际 GitHub 地址替换下列占位地址：
+
+```bash
+git clone <GitHub仓库地址> hp1000-blur
+bash hp1000-blur/run.sh
+```
+
+首次运行会在终端提示粘贴仅允许该 HF 仓库读写的 Token。输入不回显，不进入 shell 命令历史；脚本将它保存在 `${XDG_CONFIG_HOME:-~/.config}/humanplus-blur/token.private`（0600），位于 Git checkout 外。随后自动下载并检查软件包、准备独立环境、下载视频、脱敏、验证双目输出并回传。以后的运行自动复用该凭证，不需要再次输入，也不需要手工创建 `token.private`。
+
+私有仓库仍然需要一次身份验证；“两条命令”不是免凭证访问。不要把 Token 写进脚本、README、Git URL或GitHub仓库。
+
+```bash
+# 换存储目录，避免占用home配额
+bash hp1000-blur/run.sh --work-dir /scratch/humanplus-blur
+# 配套批次入口；当前冻结清单仅有一个30秒样本，并不代表10条已经验收
+bash hp1000-blur/run.sh --all --work-dir /scratch/humanplus-blur
+# Slurm/无交互终端：提前通过安全方式提供0600凭证文件
+bash hp1000-blur/run.sh --token-file /private/path/hf-token --work-dir /scratch/humanplus-blur
+# 替换缓存Token，重新隐藏输入
+bash hp1000-blur/run.sh --new-token
+```
+
+也支持作业系统通过秘密环境变量提供 `HF_TOKEN`，此时只创建临时0600文件，退出即删除，不写入永久缓存；不要把实际Token写在命令行中。首次交互输入需在可交互终端中完成，不能在Slurm无终端作业中等待粘贴。
+
+依赖边界：Linux x86_64/glibc>=2.28、兼容NVIDIA驱动、基本bash/tar/gzip/sha256sum/flock和curl或wget。Python、视频工具、PyTorch、算法与模型均由脚本准备。网络按德国正常直连使用，脚本不含国内VPN、代理地址或SSH通道。
+
+当前已冻结的是 `session_20260902_132925` 的30秒L-Sequence试验，左右各904帧，实际源PTS44.974–74.968秒。处理、解码、逐PTS及HF回读SHA已在RTX3090测试通过；传输升级复用了已校验的算法结果。B200目标节点需实际试运行，整段和10条结果不能由该短样本代替。
+
+正式HD输出是 `fisheye_left.mp4`、`fisheye_right.mp4`。重复运行复用同一数据/版本已通过的结果，保留失败attempt和日志，处理中断后会整片重试。磁盘按小样本至少50GiB可用预算，GPU建议8–16GiB可用显存，8CPU/32GiB内存；批次资源要按实际输入核算。文件完整性通过不等于零漏脸。
