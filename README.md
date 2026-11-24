@@ -28,6 +28,17 @@ bash hp1000-blur/run.sh --new-token
 
 依赖边界：Linux x86_64/glibc>=2.28、兼容NVIDIA驱动、基本bash/tar/gzip/sha256sum/flock和curl或wget。Python、视频工具、PyTorch、算法与模型均由脚本准备。网络按德国正常直连使用，脚本不含国内VPN、代理地址或SSH通道。
 
-当前已冻结的是 `session_20260902_132925` 的30秒L-Sequence试验，左右各904帧，实际源PTS44.974–74.968秒。处理、解码、逐PTS及HF回读SHA已在RTX3090测试通过；传输升级复用了已校验的算法结果。B200目标节点需实际试运行，整段和10条结果不能由该短样本代替。
+请先在集群中申请到一张 GPU，并在分配的计算节点内运行；脚本不会代替 Slurm/PBS 申请资源。若通过批处理提交，请使用 `--token-file`，不要在无交互作业里等待输入。
+
+当前已冻结的是 `session_20260902_132925` 的30秒L-Sequence试验，左右各904帧，实际源PTS44.974–74.968秒。处理、解码、逐PTS及HF回读SHA已在RTX3090测试通过；传输升级复用了已校验的算法结果。完整345秒样本及另外4条完整 L 视频也已在我们的RTX3090服务器处理并回传成功（退出码0）；这个GitHub入口仍只处理30秒样本，方便师兄先验证部署。B200目标节点尚未实测，10条批次尚未验收。
 
 正式HD输出是 `fisheye_left.mp4`、`fisheye_right.mp4`。重复运行复用同一数据/版本已通过的结果，保留失败attempt和日志，处理中断后会整片重试。磁盘按小样本至少50GiB可用预算，GPU建议8–16GiB可用显存，8CPU/32GiB内存；批次资源要按实际输入核算。文件完整性通过不等于零漏脸。
+
+
+师兄首次验收以终端 `Batch finished: 1/1 passed` 和退出码0为准。默认工作目录在仓库下 `.run/`，使用 `--work-dir` 时则以该目录为根：
+
+- 进度和日志：`work-overlay-r5/jobs/LSEQ_73a37c51d124-45s-75s/attempts/*/inference.log`。
+- 最终视频：`work-overlay-r5/jobs/LSEQ_73a37c51d124-45s-75s/output/fisheye_left.mp4` 和 `fisheye_right.mp4`。
+- 处理与上传证据：该任务的 `reports/execution.json`、`reports/return_receipt.json`；批次汇总为 `work-overlay-r5/batch.json`。
+
+失败时保留工作目录。请把失败阶段、退出码和上述任务日志反馈给发送者；不要发送Token、请求头或部署下载日志中的完整临时链接。初次运行包含约4.69GB软件包和约607MB输入下载，以及环境展开；总耗时取决于网络、存储和GPU。`--all` 当前与默认入口使用同一个单条短样本，不会自动扩展为10条。

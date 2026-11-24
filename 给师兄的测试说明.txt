@@ -1,0 +1,13 @@
+师兄好，想麻烦您帮忙测试一下Linux GPU节点上的双目视频脱敏部署。先跑一段30秒样本，输入、模型和环境都由脚本下载，处理后自动把左右视频上传回私有Hugging Face仓库。
+
+资源建议：1张NVIDIA GPU（至少8GB可用显存），8核CPU、32GB内存、至少50GiB可用磁盘；需要能访问GitHub和Hugging Face。系统只需NVIDIA驱动、Git、基础Linux命令及curl/wget，其他环境由脚本安装，无需sudo。B200尚未实测，想先验证兼容性。
+
+您按平时方式申请到GPU计算节点后，只需：
+git clone <我建好后提供的GitHub地址> hp1000-blur
+bash hp1000-blur/run.sh
+
+首次终端会提示粘贴HF Token（输入隐藏），我私下单独发您。Token会保存在本机仓库外，下次直接运行即可。
+如果工作目录要放scratch，第二条改成：
+bash hp1000-blur/run.sh --work-dir /实际scratch路径/humanplus-blur
+
+脚本完成会显示1/1 passed；最终产物是fisheye_left.mp4和fisheye_right.mp4，自动回传并校验。出现问题保留目录，把失败阶段、退出码和inference.log发我就好，Token不用发回。先验证这一条，不需要一次处理整批数据。谢谢师兄！
