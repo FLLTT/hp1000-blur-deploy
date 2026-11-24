@@ -3,7 +3,7 @@
 资源建议：1张NVIDIA GPU（至少8GB可用显存），8核CPU、32GB内存、至少50GiB可用磁盘；需要能访问GitHub和Hugging Face。系统只需NVIDIA驱动、Git、基础Linux命令及curl/wget，其他环境由脚本安装，无需sudo。B200尚未实测，想先验证兼容性。
 
 您按平时方式申请到GPU计算节点后，只需：
-git clone <我建好后提供的GitHub地址> hp1000-blur
+git clone https://github.com/FLLTT/hp1000-blur-deploy.git hp1000-blur
 bash hp1000-blur/run.sh
 
 首次终端会提示粘贴HF Token（输入隐藏），我私下单独发您。Token会保存在本机仓库外，下次直接运行即可。

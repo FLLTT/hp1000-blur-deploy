@@ -2,10 +2,10 @@
 
 这个仓库只包含小型启动脚本和说明。模型、环境包、输入视频与返回结果均保存在私有 Hugging Face Dataset `FLTTY/Lty-HP1000`；仓库不包含 Token、模型包或原始数据。
 
-在仓库正式发布后，用实际 GitHub 地址替换下列占位地址：
+在已分配的 GPU 计算节点中执行：
 
 ```bash
-git clone <GitHub仓库地址> hp1000-blur
+git clone https://github.com/FLLTT/hp1000-blur-deploy.git hp1000-blur
 bash hp1000-blur/run.sh
 ```
 
