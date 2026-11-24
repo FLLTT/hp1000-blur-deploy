@@ -1,13 +1,14 @@
-师兄好，想麻烦您帮忙测试一下Linux GPU节点上的双目视频脱敏部署。先跑一段30秒样本，输入、模型和环境都由脚本下载，处理后自动把左右视频上传回私有Hugging Face仓库。
+师兄好，HF数据已公开，脚本已改成全程非交互，不用输入Token。麻烦在申请到GPU的Linux计算节点上更新并运行：
 
-资源建议：1张NVIDIA GPU（至少8GB可用显存），8核CPU、32GB内存、至少50GiB可用磁盘；需要能访问GitHub和Hugging Face。系统只需NVIDIA驱动、Git、基础Linux命令及curl/wget，其他环境由脚本安装，无需sudo。B200尚未实测，想先验证兼容性。
+git -C hp1000-blur pull --ff-only
+bash hp1000-blur/run.sh --work-dir /实际scratch路径/humanplus-blur
 
-您按平时方式申请到GPU计算节点后，只需：
+如果还没下载：
 git clone https://github.com/FLLTT/hp1000-blur-deploy.git hp1000-blur
 bash hp1000-blur/run.sh
 
-首次终端会提示粘贴HF Token（输入隐藏），我私下单独发您。Token会保存在本机仓库外，下次直接运行即可。
-如果工作目录要放scratch，第二条改成：
-bash hp1000-blur/run.sh --work-dir /实际scratch路径/humanplus-blur
+先跑30秒样本，自动下载、配置环境、脱敏并验证。建议1张GPU至少8GB空闲显存、8CPU、32GB内存及50GiB磁盘。结果在工作目录的work-public-r1/jobs/LSEQ_73a37c51d124-45s-75s/output/，文件是fisheye_left.mp4和fisheye_right.mp4。
 
-脚本完成会显示1/1 passed；最终产物是fisheye_left.mp4和fisheye_right.mp4，自动回传并校验。出现问题保留目录，把失败阶段、退出码和inference.log发我就好，Token不用发回。先验证这一条，不需要一次处理整批数据。谢谢师兄！
+默认只保存在节点本地，不会上传；HF公开只免下载认证，写入仍需Token。如果要自动回传，我单独提供Token私有文件，用--token-file /实际路径/token.private（0600）启动即可，同样不需要交互输入。
+
+完成会显示1/1 passed；报错保留目录，反馈失败阶段和inference.log即可，Token不用发回。

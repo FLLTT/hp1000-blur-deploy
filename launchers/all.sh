@@ -8,9 +8,6 @@ BLUR_REVISION='ae81dc9b5ec9687443f7534ce6b9012eb8342288'
 BLUR_PACKAGE='deployments/b65139c4302b91446f5d3751680a286f3ce63194ccc3ce2c85b98554da9ce423/bundle.tar'
 BLUR_PACKAGE_SHA='b65139c4302b91446f5d3751680a286f3ce63194ccc3ce2c85b98554da9ce423'
 BLUR_CONFIG_PATH='deployments/tasks/6c9da16e044b946372a89faaa118a2cd04c4ffb3ee69ef57b6d62a0320b75aa5.json'
-BLUR_TOKEN_FILE="${BLUR_HF_TOKEN_FILE:-$BLUR_LAUNCH_ROOT/token.private}"
-[[ -f "$BLUR_TOKEN_FILE" ]] || { printf '%s\n' 'Missing private HF token file supplied by sender.' >&2; exit 2; }
-[[ "$(stat -c '%a' "$BLUR_TOKEN_FILE")" == 600 ]] || { printf '%s\n' 'Token file must have mode 0600.' >&2; exit 2; }
 command -v curl >/dev/null || command -v wget >/dev/null || { printf '%s\n' 'Download launcher needs curl or wget; offline archive/run.sh is also supported.' >&2; exit 2; }
 [[ "$BLUR_PACKAGE_SHA" =~ ^[0-9a-f]{64}$ && "$BLUR_REVISION" =~ ^[0-9a-f]{40}$ ]] || { printf '%s\n' 'Sender must configure this launcher before delivery.' >&2; exit 2; }
 mkdir -p "$BLUR_LAUNCH_ROOT/deployment"
@@ -19,10 +16,13 @@ flock -n 9 || exit 75
 BLUR_HEADER_FILE="$(mktemp "$BLUR_LAUNCH_ROOT/deployment/header.XXXXXX")"
 BLUR_DOWNLOAD_TMP="$(mktemp -d "$BLUR_LAUNCH_ROOT/deployment/download.XXXXXX")"
 trap 'rm -f -- "$BLUR_HEADER_FILE"; rm -rf -- "$BLUR_DOWNLOAD_TMP"' EXIT
-IFS= read -r BLUR_TOKEN < "$BLUR_TOKEN_FILE" || true
-[[ -n "$BLUR_TOKEN" && "$BLUR_TOKEN" != *$'\r'* ]] || exit 2
-printf 'Authorization: Bearer %s\n' "$BLUR_TOKEN" > "$BLUR_HEADER_FILE"
-unset BLUR_TOKEN
+if [[ -n "${BLUR_HF_TOKEN_FILE:-}" ]]; then
+ IFS= read -r BLUR_TOKEN < "$BLUR_HF_TOKEN_FILE" || true
+ printf 'Authorization: Bearer %s\n' "$BLUR_TOKEN" > "$BLUR_HEADER_FILE"
+ unset BLUR_TOKEN
+else
+ : > "$BLUR_HEADER_FILE"
+fi
 blur_download() {
  local BLUR_URL="$1" BLUR_DEST="$2" BLUR_STEP BLUR_CODE BLUR_NEXT
  if command -v curl >/dev/null; then
@@ -31,7 +31,8 @@ blur_download() {
   return
  fi
  # Authenticate only to huggingface.co. Never forward the HF token to a CDN.
- printf 'header = %s\n' "$(cat "$BLUR_HEADER_FILE")" > "$BLUR_DOWNLOAD_TMP/wget-auth"
+ : > "$BLUR_DOWNLOAD_TMP/wget-auth"
+ [[ ! -s "$BLUR_HEADER_FILE" ]] || printf 'header = %s\n' "$(cat "$BLUR_HEADER_FILE")" > "$BLUR_DOWNLOAD_TMP/wget-auth"
  for BLUR_STEP in 1 2 3 4 5 6 7 8; do
   printf '%s\n' "$BLUR_URL" > "$BLUR_DOWNLOAD_TMP/url"
   if [[ "$BLUR_URL" != https://huggingface.co/* ]]; then
@@ -128,7 +129,15 @@ elif [[ "$BLUR_CURRENT_TRANSPORT" != 'd8f89b2affb717ffacea0451e6ba6823b725d281e1
  printf '%s\n' 'Unexpected transport version; preserved without overwrite.' >&2
  exit 1
 fi
-export BLUR_HF_TOKEN_FILE="$BLUR_TOKEN_FILE"
+BLUR_PUBLIC_PAYLOAD="$BLUR_RELEASE_DIR/public-r1/humanplus-blur-hf-v2"
+if [[ ! -d "$BLUR_PUBLIC_PAYLOAD" ]]; then
+ mkdir -p "$BLUR_PUBLIC_PAYLOAD"
+ cp -al "$BLUR_OVERLAY_PAYLOAD/." "$BLUR_PUBLIC_PAYLOAD/"
+fi
+bash "$BLUR_OVERLAY_PAYLOAD/run.sh" --setup-only \
+ "$BLUR_LAUNCH_ROOT/deployment/job.private.json" "$BLUR_LAUNCH_ROOT/work-public-r1"
+"$BLUR_LAUNCH_ROOT/work-public-r1/environment/bin/python" "$BLUR_PUBLIC_TOOLS/configure_public.py" "$BLUR_PUBLIC_PAYLOAD"
+BLUR_OVERLAY_PAYLOAD="$BLUR_PUBLIC_PAYLOAD"
 if [[ "${BLUR_PREPARE_ONLY:-0}" == 1 ]]; then echo "Software verified; no worker started."; exit 0; fi
 bash "$BLUR_OVERLAY_PAYLOAD/run.sh" \
- "$BLUR_LAUNCH_ROOT/deployment/job.private.json" "$BLUR_LAUNCH_ROOT/work-overlay-r5"
+ "$BLUR_LAUNCH_ROOT/deployment/job.private.json" "$BLUR_LAUNCH_ROOT/work-public-r1"
